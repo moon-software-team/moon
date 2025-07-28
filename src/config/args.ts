@@ -17,6 +17,16 @@ const argv = yargs(hideBin(process.argv))
     description: 'Define the server port',
     default: process.moonConfig.server.port
   })
+  .option('vlc-port', {
+    type: 'number',
+    description: 'Define the VLC http server port',
+    default: process.moonConfig.vlc.port
+  })
+  .option('vlc-password', {
+    type: 'string',
+    description: 'Define the VLC http server password',
+    default: process.moonConfig.vlc.password
+  })
   .parseSync();
 
 export default argv;
