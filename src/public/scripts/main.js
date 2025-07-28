@@ -69,16 +69,33 @@ function initializeFullscreen() {
 }
 
 // Lazy loading configuration
-const ITEMS_PER_BATCH = 20; // Number of items to load per batch
-let currentBatch = 0;
+const ITEMS_PER_BATCH = 50; // Increased batch size for better performance
 let allItems = [];
 let isLoading = false;
+
+// Simplified rendering state
+let renderState = {
+  currentlyRendered: 0,
+  totalItems: 0
+};
 
 // Search state
 let filteredItems = [];
 let isSearchActive = false;
 let searchQuery = '';
 let searchTimeout = null;
+
+// Filter state
+let isFiltersActive = false;
+let currentFilters = {
+  sort: 'title',
+  genre: '',
+  year: '',
+  duration: '',
+  rating: ''
+};
+let availableGenres = new Set();
+let availableYears = new Set();
 
 async function plex(endpoint, params = {}) {
   const url = new URL(endpoint, document.location.origin);
@@ -108,6 +125,18 @@ const SEARCH_INPUT = document.querySelector('.search-input');
 const SEARCH_BUTTON = document.querySelector('.search-button');
 const SEARCH_CLEAR = document.querySelector('.search-clear');
 
+// Filter elements
+const FILTERS = document.querySelector('.filters');
+const FILTERS_HEADER = document.querySelector('.filters-header');
+const FILTERS_CONTENT = document.querySelector('.filters-content');
+const SORT_FILTER = document.getElementById('sortFilter');
+const GENRE_FILTER = document.getElementById('genreFilter');
+const YEAR_FILTER = document.getElementById('yearFilter');
+const DURATION_FILTER = document.getElementById('durationFilter');
+const RATING_FILTER = document.getElementById('ratingFilter');
+const CLEAR_FILTERS_BTN = document.getElementById('clearFilters');
+const APPLY_FILTERS_BTN = document.getElementById('applyFilters');
+
 // Modal elements
 const MODAL_OVERLAY = document.getElementById('movieModal');
 const MODAL_CLOSE = document.querySelector('.modal-close');
@@ -129,17 +158,21 @@ let availableSubtitleTracks = [];
 let intersectionObserver;
 
 function createIntersectionObserver() {
+  if (intersectionObserver) {
+    intersectionObserver.disconnect();
+  }
+
   intersectionObserver = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting && !isLoading) {
-          loadNextBatch();
+          loadMoreItems();
         }
       });
     },
     {
       threshold: 0.1,
-      rootMargin: '100px'
+      rootMargin: '200px' // Start loading before we reach the end
     }
   );
 }
@@ -162,6 +195,132 @@ function createMetadataItem(item) {
   });
 
   return itemElement;
+}
+
+// Simplified rendering functions
+function renderItems(items, append = false) {
+  if (!items || items.length === 0) {
+    if (!append) {
+      SECTION_CONTENT_CONTAINER.innerHTML = '';
+      renderState.currentlyRendered = 0;
+    }
+    return;
+  }
+
+  renderState.totalItems = items.length;
+
+  if (!append) {
+    SECTION_CONTENT_CONTAINER.innerHTML = '';
+    renderState.currentlyRendered = 0;
+  }
+
+  const startIndex = append ? renderState.currentlyRendered : 0;
+  const endIndex = Math.min(startIndex + ITEMS_PER_BATCH, items.length);
+
+  const fragment = document.createDocumentFragment();
+
+  for (let i = startIndex; i < endIndex; i++) {
+    const item = items[i];
+    const itemElement = createMetadataItem(item);
+    setupImageLazyLoading(itemElement);
+    fragment.appendChild(itemElement);
+  }
+
+  SECTION_CONTENT_CONTAINER.appendChild(fragment);
+  renderState.currentlyRendered = endIndex;
+
+  // Add loading sentinel if there are more items
+  removeSentinel();
+  if (endIndex < items.length) {
+    addSentinel();
+  }
+
+  // Trigger animations with staggered delay
+  requestAnimationFrame(() => {
+    const newItems = SECTION_CONTENT_CONTAINER.querySelectorAll('.metadata-item:not(.loaded)');
+    newItems.forEach((item, index) => {
+      setTimeout(() => {
+        item.classList.add('loaded');
+      }, index * 20);
+    });
+  });
+}
+
+function addSentinel() {
+  const sentinel = document.createElement('div');
+  sentinel.className = 'loading-sentinel';
+  sentinel.style.height = '1px';
+  sentinel.style.width = '100%';
+  sentinel.style.gridColumn = '1 / -1'; // Span all columns
+  SECTION_CONTENT_CONTAINER.appendChild(sentinel);
+
+  if (intersectionObserver) {
+    intersectionObserver.observe(sentinel);
+  }
+}
+
+function removeSentinel() {
+  const existingSentinel = SECTION_CONTENT_CONTAINER.querySelector('.loading-sentinel');
+  if (existingSentinel) {
+    if (intersectionObserver) {
+      intersectionObserver.unobserve(existingSentinel);
+    }
+    existingSentinel.remove();
+  }
+}
+
+function setupImageLazyLoading(itemElement) {
+  const img = itemElement.querySelector('img');
+  const thumbnail = itemElement.querySelector('.thumbnail');
+
+  if (!img.dataset.observer) {
+    const imgObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const image = entry.target;
+            image.src = image.dataset.src;
+            image.onload = () => {
+              image.classList.add('loaded');
+              thumbnail.classList.add('loaded');
+            };
+            image.onerror = () => {
+              thumbnail.classList.add('loaded');
+            };
+            imgObserver.unobserve(image);
+          }
+        });
+      },
+      {
+        rootMargin: '50px' // Start loading images a bit before they're visible
+      }
+    );
+
+    imgObserver.observe(img);
+    img.dataset.observer = 'true';
+  }
+}
+
+function loadMoreItems() {
+  const items = getFilteredAndSortedItems();
+
+  if (renderState.currentlyRendered >= items.length || isLoading) {
+    return;
+  }
+
+  isLoading = true;
+  renderItems(items, true); // Append more items
+  isLoading = false;
+}
+
+function getFilteredAndSortedItems() {
+  let items = isSearchActive ? filteredItems : allItems;
+
+  if (isFiltersActive) {
+    items = filterItems(items, currentFilters);
+  }
+
+  return sortItems(items, currentFilters.sort);
 }
 
 function formatDuration(durationMs) {
@@ -398,46 +557,17 @@ function performSearch(query) {
 
   isSearchActive = true;
 
-  // Filter items based on search query
+  // Filter items based on search query (optimized)
   filteredItems = allItems.filter((item) => {
-    return (
-      item.title.toLowerCase().includes(searchQuery) ||
-      (item.year && item.year.toString().includes(searchQuery)) ||
-      (item.summary && item.summary.toLowerCase().includes(searchQuery))
-    );
+    const title = item.title.toLowerCase();
+    const year = item.year?.toString() || '';
+    const summary = item.summary?.toLowerCase() || '';
+
+    return title.includes(searchQuery) || year.includes(searchQuery) || summary.includes(searchQuery);
   });
 
-  // Clear current display
-  SECTION_CONTENT_CONTAINER.innerHTML = '';
-
-  // Display filtered results
-  filteredItems.forEach((item, index) => {
-    const itemElement = createMetadataItem(item);
-    SECTION_CONTENT_CONTAINER.appendChild(itemElement);
-
-    // Trigger animation after a short delay
-    setTimeout(() => {
-      itemElement.classList.add('loaded');
-
-      // Setup image lazy loading
-      const img = itemElement.querySelector('img');
-      const thumbnail = itemElement.querySelector('.thumbnail');
-      const imgObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const image = entry.target;
-            image.src = image.dataset.src;
-            image.onload = () => {
-              image.classList.add('loaded');
-              thumbnail.classList.add('loaded');
-            };
-            imgObserver.unobserve(image);
-          }
-        });
-      });
-      imgObserver.observe(img);
-    }, index * 50);
-  });
+  // Apply current filters to search results and render
+  applyFiltersAndRender();
 
   // Show clear button
   SEARCH_CLEAR.classList.remove('hidden');
@@ -455,10 +585,13 @@ function clearSearch() {
     searchTimeout = null;
   }
 
-  // Reset to original view with lazy loading
-  SECTION_CONTENT_CONTAINER.innerHTML = '';
-  currentBatch = 0;
-  loadNextBatch();
+  // Apply filters if active, otherwise reset to original view
+  applyFiltersAndRender();
+}
+
+function applyFiltersAndRender() {
+  const items = getFilteredAndSortedItems();
+  renderItems(items, false); // Fresh render, don't append
 }
 
 function debouncedSearch(query) {
@@ -499,6 +632,219 @@ SEARCH_CLEAR.addEventListener('click', () => {
   clearSearch();
 });
 
+// Filter functionality
+function populateFilterOptions() {
+  // Clear existing options
+  GENRE_FILTER.innerHTML = '<option value="">All Genres</option>';
+  YEAR_FILTER.innerHTML = '<option value="">All Years</option>';
+
+  // Populate genres
+  const sortedGenres = Array.from(availableGenres).sort();
+  sortedGenres.forEach((genre) => {
+    const option = document.createElement('option');
+    option.value = genre;
+    option.textContent = genre;
+    GENRE_FILTER.appendChild(option);
+  });
+
+  // Populate years
+  const sortedYears = Array.from(availableYears).sort((a, b) => b - a);
+  sortedYears.forEach((year) => {
+    const option = document.createElement('option');
+    option.value = year;
+    option.textContent = year;
+    YEAR_FILTER.appendChild(option);
+  });
+}
+
+function extractFilterData(items) {
+  availableGenres.clear();
+  availableYears.clear();
+
+  items.forEach((item) => {
+    // Extract genres
+    if (item.Genre && Array.isArray(item.Genre)) {
+      item.Genre.forEach((genre) => {
+        if (genre.tag) {
+          availableGenres.add(genre.tag);
+        }
+      });
+    }
+
+    // Extract years
+    if (item.year) {
+      availableYears.add(item.year);
+    }
+  });
+
+  populateFilterOptions();
+}
+
+function sortItems(items, sortBy) {
+  if (!items || items.length === 0) return items;
+
+  // Use a more efficient sorting approach
+  const sortedItems = [...items];
+
+  switch (sortBy) {
+    case 'title':
+      return sortedItems.sort((a, b) => a.title.localeCompare(b.title));
+    case 'title-desc':
+      return sortedItems.sort((a, b) => b.title.localeCompare(a.title));
+    case 'year':
+      return sortedItems.sort((a, b) => (a.year || 0) - (b.year || 0));
+    case 'year-desc':
+      return sortedItems.sort((a, b) => (b.year || 0) - (a.year || 0));
+    case 'recently-added':
+      return sortedItems.sort((a, b) => {
+        const dateA = new Date(b.addedAt || 0);
+        const dateB = new Date(a.addedAt || 0);
+        return dateA - dateB;
+      });
+    case 'recently-released':
+      return sortedItems.sort((a, b) => {
+        const dateA = new Date(b.originallyAvailableAt || 0);
+        const dateB = new Date(a.originallyAvailableAt || 0);
+        return dateA - dateB;
+      });
+    case 'duration':
+      return sortedItems.sort((a, b) => (a.duration || 0) - (b.duration || 0));
+    case 'duration-desc':
+      return sortedItems.sort((a, b) => (b.duration || 0) - (a.duration || 0));
+    case 'rating':
+      return sortedItems.sort((a, b) => (a.rating || a.audienceRating || 0) - (b.rating || b.audienceRating || 0));
+    case 'rating-desc':
+      return sortedItems.sort((a, b) => (b.rating || b.audienceRating || 0) - (a.rating || a.audienceRating || 0));
+    default:
+      return sortedItems;
+  }
+}
+
+function filterItems(items, filters) {
+  if (!items || items.length === 0) return items;
+
+  // Early return if no filters are active
+  const hasActiveFilters = filters.genre || filters.year || filters.duration || filters.rating;
+  if (!hasActiveFilters) return items;
+
+  return items.filter((item) => {
+    // Genre filter (optimized)
+    if (filters.genre) {
+      if (!item.Genre || !Array.isArray(item.Genre)) return false;
+      if (!item.Genre.some((genre) => genre.tag === filters.genre)) return false;
+    }
+
+    // Year filter (optimized)
+    if (filters.year && item.year?.toString() !== filters.year) return false;
+
+    // Duration filter (optimized)
+    if (filters.duration) {
+      const durationMs = item.duration || 0;
+      const durationMin = durationMs / 60000; // Convert to minutes more efficiently
+
+      switch (filters.duration) {
+        case 'short':
+          if (durationMin >= 90) return false;
+          break;
+        case 'medium':
+          if (durationMin < 90 || durationMin > 150) return false;
+          break;
+        case 'long':
+          if (durationMin <= 150) return false;
+          break;
+      }
+    }
+
+    // Rating filter (optimized)
+    if (filters.rating) {
+      const rating = item.rating || item.audienceRating || 0;
+
+      switch (filters.rating) {
+        case 'high':
+          if (rating < 8.0) return false;
+          break;
+        case 'good':
+          if (rating < 6.0 || rating >= 8.0) return false;
+          break;
+        case 'low':
+          if (rating >= 6.0) return false;
+          break;
+      }
+    }
+
+    return true;
+  });
+}
+
+function applyFilters() {
+  // Update current filters from UI
+  currentFilters = {
+    sort: SORT_FILTER.value,
+    genre: GENRE_FILTER.value,
+    year: YEAR_FILTER.value,
+    duration: DURATION_FILTER.value,
+    rating: RATING_FILTER.value
+  };
+
+  isFiltersActive = Object.values(currentFilters).some((value) => value !== '' && value !== 'title');
+
+  // Apply filters and render
+  applyFiltersAndRender();
+}
+
+function clearFilters() {
+  // Reset filter controls
+  SORT_FILTER.value = 'title';
+  GENRE_FILTER.value = '';
+  YEAR_FILTER.value = '';
+  DURATION_FILTER.value = '';
+  RATING_FILTER.value = '';
+
+  // Reset current filters
+  currentFilters = {
+    sort: 'title',
+    genre: '',
+    year: '',
+    duration: '',
+    rating: ''
+  };
+
+  isFiltersActive = false;
+
+  // Apply filters and render
+  applyFiltersAndRender();
+}
+
+function toggleFilters() {
+  FILTERS.classList.toggle('expanded');
+}
+
+// Debounced filter application for better performance
+let filterTimeout = null;
+function debouncedApplyFilters() {
+  if (filterTimeout) {
+    clearTimeout(filterTimeout);
+  }
+
+  filterTimeout = setTimeout(() => {
+    applyFilters();
+    filterTimeout = null;
+  }, 150); // 150ms delay for filters
+}
+
+// Add filter event listeners
+FILTERS_HEADER.addEventListener('click', toggleFilters);
+
+// Use debounced apply for better performance
+SORT_FILTER.addEventListener('change', debouncedApplyFilters);
+GENRE_FILTER.addEventListener('change', debouncedApplyFilters);
+YEAR_FILTER.addEventListener('change', debouncedApplyFilters);
+DURATION_FILTER.addEventListener('change', debouncedApplyFilters);
+RATING_FILTER.addEventListener('change', debouncedApplyFilters);
+
+APPLY_FILTERS_BTN.addEventListener('click', applyFilters);
+CLEAR_FILTERS_BTN.addEventListener('click', clearFilters);
+
 // Modal event listeners
 MODAL_CLOSE.addEventListener('click', hideMovieModal);
 PLAY_BUTTON.addEventListener('click', playMovie);
@@ -519,87 +865,47 @@ document.addEventListener('keydown', (e) => {
 
 async function fetchSectionContent(sectionKey) {
   try {
+    // Reset all UI state
+    isSearchActive = false;
+    isFiltersActive = false;
+    searchQuery = '';
+    currentFilters = {
+      sort: 'title',
+      genre: '',
+      year: '',
+      duration: '',
+      rating: ''
+    };
+    SEARCH_INPUT.value = '';
+    SEARCH_CLEAR.classList.add('hidden');
+
+    // Reset render state
+    renderState = {
+      currentlyRendered: 0,
+      totalItems: 0
+    };
+
     const result = await plex(`/plex/libraries/${sectionKey}/all`);
     allItems = result || [];
+
+    // Extract data for filters
+    extractFilterData(allItems);
 
     LOADER_CONTAINER.classList.add('hidden');
     SECTION_CONTENT_CONTAINER.classList.remove('hidden');
     SEARCH.classList.remove('hidden');
+    FILTERS.classList.remove('hidden');
 
     // Initialize lazy loading
     createIntersectionObserver();
 
-    // Load first batch
-    currentBatch = 0;
-    loadNextBatch();
+    // Initial render with first batch
+    renderItems(allItems, false);
   } catch (error) {
     console.error('Error fetching section content:', error);
     LOADER_CONTAINER.classList.add('hidden');
     SECTION_CONTENT_CONTAINER.innerHTML = `<div style="color: red; text-align: center; padding: 20px;">Error loading content: ${error.message}</div>`;
     SECTION_CONTENT_CONTAINER.classList.remove('hidden');
-  }
-}
-
-function loadNextBatch() {
-  if (isLoading || isSearchActive) return;
-
-  const itemsToDisplay = isSearchActive ? filteredItems : allItems;
-  const startIndex = currentBatch * ITEMS_PER_BATCH;
-  const endIndex = Math.min(startIndex + ITEMS_PER_BATCH, itemsToDisplay.length);
-
-  if (startIndex >= itemsToDisplay.length) return;
-
-  isLoading = true;
-
-  // Remove existing sentinel if any
-  const existingSentinel = SECTION_CONTENT_CONTAINER.querySelector('.loading-sentinel');
-  if (existingSentinel) {
-    existingSentinel.remove();
-  }
-
-  // Add items from current batch
-  for (let i = startIndex; i < endIndex; i++) {
-    const item = itemsToDisplay[i];
-    const itemElement = createMetadataItem(item);
-    SECTION_CONTENT_CONTAINER.appendChild(itemElement);
-
-    // Trigger animation after a short delay
-    setTimeout(() => {
-      itemElement.classList.add('loaded');
-
-      // Setup image lazy loading
-      const img = itemElement.querySelector('img');
-      const thumbnail = itemElement.querySelector('.thumbnail');
-      const imgObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const image = entry.target;
-            image.src = image.dataset.src;
-            image.onload = () => {
-              image.classList.add('loaded');
-              thumbnail.classList.add('loaded');
-            };
-            image.onerror = () => {
-              // Handle image load error
-              thumbnail.classList.add('loaded');
-            };
-            imgObserver.unobserve(image);
-          }
-        });
-      });
-      imgObserver.observe(img);
-    }, (i - startIndex) * 50);
-  }
-
-  currentBatch++;
-  isLoading = false;
-
-  // Add loading sentinel if there are more items
-  if (endIndex < itemsToDisplay.length) {
-    const sentinel = document.createElement('div');
-    sentinel.className = 'loading-sentinel';
-    SECTION_CONTENT_CONTAINER.appendChild(sentinel);
-    intersectionObserver.observe(sentinel);
   }
 }
 
