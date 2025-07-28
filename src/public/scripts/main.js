@@ -1,8 +1,5 @@
 const socket = io();
 
-const ENDPOINT = 'http://192.168.1.102:32400/';
-const TOKEN = 'ggJok5-cxQDXtbKGycLD';
-
 // Fullscreen functionality
 function enterFullscreen() {
   const element = document.documentElement;
@@ -84,11 +81,10 @@ let searchQuery = '';
 let searchTimeout = null;
 
 async function plex(endpoint, params = {}) {
-  const url = new URL(endpoint, ENDPOINT);
+  const url = new URL(endpoint, document.location.origin);
 
   url.search = new URLSearchParams({
-    ...params,
-    'X-Plex-Token': TOKEN
+    ...params
   });
 
   const response = await fetch(url.toString(), {
@@ -153,7 +149,7 @@ function createMetadataItem(item) {
   itemElement.className = 'metadata-item';
   itemElement.innerHTML = `
     <div class="thumbnail">
-        <img src="" data-src="http://192.168.1.102:32400${item.thumb}?X-Plex-Token=ggJok5-cxQDXtbKGycLD" alt="${item.title}">
+        <img src="" data-src="/plex/image?uri=${item.thumb}" alt="${item.title}">
     </div>
     <div class="info">
         <div class="title">${item.title}</div>
@@ -190,7 +186,7 @@ async function showMovieModal(item) {
   // Show modal immediately with basic info
   MODAL_TITLE.textContent = item.title;
   MODAL_YEAR.textContent = item.year || 'N/A';
-  MODAL_POSTER.src = `http://192.168.1.102:32400${item.thumb}?X-Plex-Token=ggJok5-cxQDXtbKGycLD`;
+  MODAL_POSTER.src = `/plex/image?uri=${item.thumb}&width=480&height=720`;
   MODAL_POSTER.alt = item.title;
 
   // Clear previous detailed info
@@ -207,16 +203,17 @@ async function showMovieModal(item) {
   currentMovieData = item;
 
   // If we don't have detailed media info, fetch it
-  if (!item.Media || !item.Media[0] || !item.Media[0].Part || !item.Media[0].Part[0].Stream) {
-    try {
-      const detailedResult = await plex(`/library/metadata/${item.ratingKey}`);
-      if (detailedResult.MediaContainer.Metadata && detailedResult.MediaContainer.Metadata[0]) {
-        currentMovieData = detailedResult.MediaContainer.Metadata[0];
-      }
-    } catch (error) {
-      console.error('Error fetching detailed media info:', error);
-    }
-  }
+  // FIXME: Uncomment this block if you want to fetch detailed media info
+  // if (!item.Media || !item.Media[0] || !item.Media[0].Part || !item.Media[0].Part[0].Stream) {
+  //   try {
+  //     const detailedResult = await plex(`/library/metadata/${item.ratingKey}`);
+  //     if (detailedResult.MediaContainer.Metadata && detailedResult.MediaContainer.Metadata[0]) {
+  //       currentMovieData = detailedResult.MediaContainer.Metadata[0];
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching detailed media info:', error);
+  //   }
+  // }
 
   // Reset scroll position to top
   MODAL_OVERLAY.scrollTop = 0;
@@ -369,9 +366,9 @@ const MOVIE_ICON = `<svg aria-hidden="true" class="section-icon" fill="currentCo
 const TV_ICON = `<svg aria-hidden="true" class="section-icon" fill="currentColor" height="24" viewBox="0 0 48 48" width="24" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="M6 5H42C42.7957 5 43.5587 5.31607 44.1213 5.87868C44.6839 6.44129 45 7.20435 45 8V34C45 34.7957 44.6839 35.5587 44.1213 36.1213C43.5587 36.6839 42.7957 37 42 37H6C5.20435 37 4.44129 36.6839 3.87868 36.1213C3.31607 35.5587 3 34.7957 3 34V8C3 7.20435 3.31607 6.44129 3.87868 5.87868C4.44129 5.31607 5.20435 5 6 5ZM6 34H42V8H6V34Z" fill="currentColor" fill-rule="evenodd"></path><path d="M36 43V40H12V43H36Z" fill="currentColor"></path></svg>`;
 
 async function main() {
-  const result = await plex('/library/sections');
+  const result = await plex('/plex/libraries');
 
-  result.MediaContainer.Directory.forEach((section) => {
+  result.forEach((section) => {
     const sectionElement = document.createElement('div');
     sectionElement.className = 'section';
     sectionElement.innerHTML = `${section.type === 'movie' ? MOVIE_ICON : TV_ICON} <span>${section.title}</span>`;
@@ -522,8 +519,8 @@ document.addEventListener('keydown', (e) => {
 
 async function fetchSectionContent(sectionKey) {
   try {
-    const result = await plex(`/library/sections/${sectionKey}/all`);
-    allItems = result.MediaContainer.Metadata || [];
+    const result = await plex(`/plex/libraries/${sectionKey}/all`);
+    allItems = result || [];
 
     LOADER_CONTAINER.classList.add('hidden');
     SECTION_CONTENT_CONTAINER.classList.remove('hidden');

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { PlexLibraries, PlexLibrary, PlexMetadata, PlexLibraryContent, PlexLibraryDetails } from '../../types';
 import { Cache, CacheOptions } from '../utils';
-import { minutes } from '../utils';
+import { minutes, hours } from '../utils';
 
 class PlexAPI {
   private url: string;
@@ -111,6 +111,43 @@ class PlexAPI {
     // Library content might change more frequently, use shorter TTL (5 minutes)
     const contentData = await this.request(endpoint, minutes(5));
     return (contentData as PlexLibraryContent).MediaContainer.Metadata;
+  }
+
+  /**
+   * @brief Fetches an image from the Plex server using a specific URI.
+   * @param uri - The URI of the image to fetch.
+   * @param width - The desired width of the image.
+   * @param height - The desired height of the image.
+   * @returns A promise that resolves to the image buffer.
+   */
+  public async getImageFromURI(uri: string, width: number = 240, height: number = 360) {
+    const cacheKey = `image:${uri}:${width}:${height}`;
+
+    const cachedImage = this.cache.get<Buffer>(cacheKey);
+    if (cachedImage) {
+      return cachedImage;
+    }
+
+    const url = `${this.url}/photo/:/transcode?width=${width}&height=${height}&minSize=1&upscale=1&url=${uri}&X-Plex-Token=${this.token}`;
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          'X-Plex-Token': this.token
+        },
+        responseType: 'arraybuffer'
+      });
+
+      const imageBuffer = Buffer.from(response.data);
+
+      // Store in cache with longer TTL since images don't change often (2 hours)
+      this.cache.set(cacheKey, imageBuffer, hours(2));
+
+      return imageBuffer;
+    } catch (error) {
+      console.error('Error fetching image from Plex:', error);
+      throw error;
+    }
   }
 
   /**

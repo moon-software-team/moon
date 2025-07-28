@@ -33,6 +33,27 @@ class PlexController {
       res.status(500).json({ code: 500, error: 'Internal Server Error ' });
     }
   }
+
+  async getImage(req: Request, res: Response) {
+    try {
+      const { uri, width, height } = req.value;
+
+      const decodedUri = decodeURIComponent(uri);
+
+      const imageBuffer = await plex.getImageFromURI(decodedUri, width, height);
+
+      res.set({
+        'Content-Type': 'image/jpeg',
+        'Content-Length': imageBuffer.length.toString(),
+        'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+      });
+
+      res.send(imageBuffer);
+    } catch (error) {
+      console.error('Error fetching image:', error);
+      res.status(500).json({ code: 500, error: 'Internal Server Error' });
+    }
+  }
 }
 
 export const plexController = new PlexController();
