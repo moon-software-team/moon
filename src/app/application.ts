@@ -76,6 +76,13 @@ class Application extends EventBus<ApplicationEvents> {
     if (this.window) {
       this.window.show();
       this.window.focus();
+
+      if (!this.window.isFullScreen()) {
+        this.window.setFullScreen(true);
+      }
+
+      this.window.moveTop();
+
       this.emit('show');
     } else {
       console.warn('Window is not created yet.');
