@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from 'electron';
 import { startServer } from './server';
 import path from 'path';
+import argv from './config';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -33,6 +34,10 @@ const createWindow = (): void => {
   });
 
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+
+  if (argv['hide-window']) {
+    mainWindow.hide();
+  }
 };
 
 app.on('ready', createWindow);
