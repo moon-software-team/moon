@@ -39,7 +39,6 @@ class PlexAPI {
     // Try to get from cache first
     const cachedData = this.cache.get(cacheKey);
     if (cachedData) {
-      console.log(`Cache hit for endpoint: ${endpoint}`);
       return cachedData;
     }
 
@@ -47,7 +46,6 @@ class PlexAPI {
     const url = `${this.url}${endpoint}?X-Plex-Token=${this.token}`;
 
     try {
-      console.log(`Making API request to: ${endpoint}`);
       const response = await axios.get(url, {
         headers: {
           'X-Plex-Token': this.token,
@@ -103,7 +101,6 @@ class PlexAPI {
    */
   public clearCache(): void {
     this.cache.clear();
-    console.log('Plex API cache cleared');
   }
 
   /**
