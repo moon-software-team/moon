@@ -11,8 +11,10 @@ import {
   onSeekPercent,
   onWatch,
   onChangeAudioTrack,
-  onChangeSubtitleTrack
+  onChangeSubtitleTrack,
+  onPlayerOpened as onPlayerAlreadyOpened
 } from './player';
+import { vlc } from '../services';
 
 export const onDisconnect = (socket: DefaultSocket) => {
   // Handle socket disconnection logic here
@@ -21,6 +23,9 @@ export const onDisconnect = (socket: DefaultSocket) => {
 export const onConnection = async (io: SocketIOServer, socket: DefaultSocket) => {
   // Disconnection event
   socket.on('disconnect', () => onDisconnect(socket));
+
+  // If VLC is open, send the current status
+  await onPlayerAlreadyOpened(io, socket);
 
   // Player control events
   socket.on('play', () => onPlay(socket));
@@ -33,9 +38,9 @@ export const onConnection = async (io: SocketIOServer, socket: DefaultSocket) =>
   socket.on('seek-percent', (percent: number) => onSeekPercent(socket, percent));
 
   // Media control events
-  socket.on('watch', () => onWatch(socket));
-  socket.on('change-audio-track', (trackId: number) => onChangeAudioTrack(socket, trackId));
-  socket.on('change-subtitle-track', (trackId: number) => onChangeSubtitleTrack(socket, trackId));
+  socket.on('watch', (data) => onWatch(io, socket, data));
+  socket.on('audio-track', (trackId: number) => onChangeAudioTrack(socket, trackId));
+  socket.on('subtitle-track', (trackId: number) => onChangeSubtitleTrack(socket, trackId));
 };
 
 export type { DefaultSocket };
