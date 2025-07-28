@@ -16,7 +16,7 @@ const stopStatusUpdates = () => {
   }
 };
 
-const startStatusUpdates = (io: SocketIOServer, socket: DefaultSocket) => {
+const startStatusUpdates = (io: SocketIOServer) => {
   if (statusInterval) {
     clearInterval(statusInterval);
   }
@@ -33,7 +33,6 @@ const startStatusUpdates = (io: SocketIOServer, socket: DefaultSocket) => {
           availableAudioTracks,
           availableSubtitleTracks
         };
-        socket.emit('player-status', statusWithTitle);
         // Broadcast to all connected clients
         io.emit('player-status', statusWithTitle);
       } catch (error) {
@@ -55,7 +54,22 @@ export const onPlayerOpened = async (io: SocketIOServer, socket: DefaultSocket) 
       availableSubtitleTracks
     };
     socket.emit('player-opened', statusWithTracks);
-    startStatusUpdates(io, socket);
+    startStatusUpdates(io);
+  }
+};
+
+export const onStop = async (io: SocketIOServer, socket: DefaultSocket) => {
+  if (vlc.isOpen()) {
+    try {
+      stopStatusUpdates();
+      await vlc.close();
+      socket.emit('close', true);
+      io.emit('player-closed');
+    } catch (error) {
+      socket.emit('close', false);
+    }
+  } else {
+    socket.emit('close', false);
   }
 };
 
@@ -104,7 +118,7 @@ export const onWatch = async (io: SocketIOServer, socket: DefaultSocket, data: a
       socket.emit('player-opened', statusWithTracks);
       io.emit('player-opened', statusWithTracks); // Broadcast to all clients
 
-      startStatusUpdates(io, socket);
+      startStatusUpdates(io);
     } catch (error) {
       console.error('Error opening file:', error);
       socket.emit('watch', false);
@@ -149,7 +163,7 @@ export const onWatch = async (io: SocketIOServer, socket: DefaultSocket, data: a
       socket.emit('player-opened', statusWithTracks);
       io.emit('player-opened', statusWithTracks); // Broadcast to all clients
 
-      startStatusUpdates(io, socket);
+      startStatusUpdates(io);
     } catch (error) {
       console.error('Error replacing file:', error);
       socket.emit('watch', false);

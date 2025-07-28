@@ -41,21 +41,6 @@ export const onTogglePlayPause = async (socket: DefaultSocket) => {
   }
 };
 
-export const onStop = async (io: SocketIOServer, socket: DefaultSocket) => {
-  if (vlc.isOpen()) {
-    try {
-      stopStatusUpdates();
-      await vlc.close();
-      socket.emit('close', true);
-      io.emit('player-closed');
-    } catch (error) {
-      socket.emit('close', false);
-    }
-  } else {
-    socket.emit('close', false);
-  }
-};
-
 export const onVolume = async (socket: DefaultSocket, volume: number) => {
   if (vlc.isOpen()) {
     try {
