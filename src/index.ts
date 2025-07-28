@@ -20,3 +20,32 @@ app.on('activate', () => {
     application.create();
   }
 });
+
+// import { spawn } from 'child_process';
+
+// const ezio = `/home/mallow/Music/OnTheSpot/Tracks/Jesper Kyd/[2009] Assassin's Creed 2 (Original Game Soundtrack)/3. Ezio's Family.mp3`;
+
+// const vlcArgs = [
+//   ezio,
+//   '--intf',
+//   'dummy', // no interface
+//   '--no-video', // no video output
+//   '--quiet', // minimal output
+//   '--play-and-exit' // exit after playback
+// ];
+
+// const vlc = spawn('vlc', vlcArgs, {
+//   stdio: 'ignore'
+// });
+
+// process.on('exit', () => {
+//   vlc.kill();
+// });
+// process.on('SIGINT', () => {
+//   vlc.kill();
+//   process.exit();
+// });
+// process.on('SIGTERM', () => {
+//   vlc.kill();
+//   process.exit();
+// });
