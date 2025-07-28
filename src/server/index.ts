@@ -23,7 +23,8 @@ const io = new SocketIOServer(server, {
   serveClient: true,
   path: '/socket.io/'
 });
-io.on('connection', onConnection);
+
+io.on('connection', (socket) => onConnection(io, socket));
 
 export const startServer = (entry: string): void => {
   plex.init();
