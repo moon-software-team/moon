@@ -63,13 +63,13 @@ export const onStop = async (io: SocketIOServer, socket: DefaultSocket) => {
     try {
       stopStatusUpdates();
       await vlc.close();
-      socket.emit('close', true);
+      socket.emit('stop', true);
       io.emit('player-closed');
     } catch (error) {
-      socket.emit('close', false);
+      socket.emit('stop', false);
     }
   } else {
-    socket.emit('close', false);
+    socket.emit('stop', false);
   }
 };
 

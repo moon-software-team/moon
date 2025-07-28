@@ -1181,7 +1181,7 @@ socket.on('watch', (success) => {
   }
 });
 
-socket.on('close', (success) => {
+socket.on('stop', (success) => {
   if (success) {
     hidePlayerControls();
   }
@@ -1194,7 +1194,7 @@ socket.on('player-closed', () => {
 
 // Player control event listeners
 BACK_BUTTON.addEventListener('click', () => {
-  socket.emit('close');
+  socket.emit('stop');
 });
 
 PLAY_PAUSE_BTN.addEventListener('click', () => {
@@ -1236,7 +1236,7 @@ SUBTITLE_TRACK_SELECT.addEventListener('change', (e) => {
 });
 
 CLOSE_PLAYER_BTN.addEventListener('click', () => {
-  socket.emit('close');
+  socket.emit('stop');
 });
 
 // Keyboard shortcuts for player
