@@ -54,6 +54,7 @@
     "electron-squirrel-startup": "^1.0.1",
     "express": "^5.1.0",
     "joi": "^17.13.3",
+    "play-sound": "^1.1.6",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.1",
     "yargs": "^18.0.0"
