@@ -1,6 +1,6 @@
 const socket = io();
 
-const ENDPOINT = 'http://192.168.1.166:32400/';
+const ENDPOINT = 'http://192.168.1.102:32400/';
 const TOKEN = 'ggJok5-cxQDXtbKGycLD';
 
 // Fullscreen functionality
@@ -153,7 +153,7 @@ function createMetadataItem(item) {
   itemElement.className = 'metadata-item';
   itemElement.innerHTML = `
     <div class="thumbnail">
-        <img src="" data-src="http://192.168.1.166:32400${item.thumb}?X-Plex-Token=ggJok5-cxQDXtbKGycLD" alt="${item.title}">
+        <img src="" data-src="http://192.168.1.102:32400${item.thumb}?X-Plex-Token=ggJok5-cxQDXtbKGycLD" alt="${item.title}">
     </div>
     <div class="info">
         <div class="title">${item.title}</div>
@@ -190,7 +190,7 @@ async function showMovieModal(item) {
   // Show modal immediately with basic info
   MODAL_TITLE.textContent = item.title;
   MODAL_YEAR.textContent = item.year || 'N/A';
-  MODAL_POSTER.src = `http://192.168.1.166:32400${item.thumb}?X-Plex-Token=ggJok5-cxQDXtbKGycLD`;
+  MODAL_POSTER.src = `http://192.168.1.102:32400${item.thumb}?X-Plex-Token=ggJok5-cxQDXtbKGycLD`;
   MODAL_POSTER.alt = item.title;
 
   // Clear previous detailed info
