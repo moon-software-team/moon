@@ -2,7 +2,6 @@ import { spawn, ChildProcess } from 'child_process';
 import * as http from 'node:http';
 import { VLCConfig, VLCStatus, AudioTrack, SubtitleTrack } from '../../types';
 import argv from '../../config';
-import { application } from '../../app';
 
 /**
  * @brief API class to handle all the command for VLC
@@ -90,17 +89,17 @@ class VLCApi {
 
     this.child.on('exit', (code) => {
       this.child = null;
-      application.show();
+      process.moon.show();
     });
 
     this.child.on('exit', (code, signal) => {
-      application.show();
+      process.moon.show();
     });
 
     // Wait for VLC HTTP interface to be ready
     await this.waitForVLC();
 
-    application.hide();
+    process.moon.hide();
   }
 
   /**

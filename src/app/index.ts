@@ -1,1 +1,5 @@
-export { application } from './application';
+import { Application } from './application';
+
+process.moon = new Application();
+
+export { Application };

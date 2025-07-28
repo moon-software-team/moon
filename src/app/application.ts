@@ -16,7 +16,7 @@ type ApplicationEvents = {
   'serve': void;
 };
 
-class Application extends EventBus<ApplicationEvents> {
+export class Application extends EventBus<ApplicationEvents> {
   private window: BrowserWindow | null = null;
   private serverStarted: boolean = false;
 
@@ -46,6 +46,11 @@ class Application extends EventBus<ApplicationEvents> {
    * @brief Creates the main application window.
    */
   public create(): void {
+    if (this.window) {
+      console.warn('Window is already created.');
+      return;
+    }
+
     this.window = new BrowserWindow({
       height: 1080,
       width: 1920,
@@ -85,7 +90,7 @@ class Application extends EventBus<ApplicationEvents> {
 
       this.emit('show');
     } else {
-      console.warn('Window is not created yet.');
+      console.warn('Window is not created yet, cannot show.');
     }
   }
 
@@ -97,7 +102,7 @@ class Application extends EventBus<ApplicationEvents> {
       this.window.hide();
       this.emit('hide');
     } else {
-      console.warn('Window is not created yet.');
+      console.warn('Window is not created yet, cannot hide.');
     }
   }
 
@@ -141,5 +146,3 @@ class Application extends EventBus<ApplicationEvents> {
     }
   }
 }
-
-export const application = new Application();

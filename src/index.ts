@@ -1,13 +1,13 @@
+import './app';
 import { app, BrowserWindow } from 'electron';
-import { application } from './app';
 
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-application.serve();
+process.moon.serve();
 
-app.on('ready', application.create);
+app.on('ready', process.moon.create);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -17,7 +17,7 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    application.create();
+    process.moon.create();
   }
 });
 
@@ -49,3 +49,15 @@ app.on('activate', () => {
 //   vlc.kill();
 //   process.exit();
 // });
+
+// import { vlc } from './server/services';
+
+// (async () => {
+//   const filepath = "/home/mallow/Code/Personal/moon-htpc/video.webm";
+
+//   await vlc.openFile(filepath, "video");
+
+//   setTimeout(() => {
+//     vlc.close();
+//   }, 2e3);
+// })()
