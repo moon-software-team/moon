@@ -27,6 +27,24 @@ export interface PlexLibrary {
   location: PlexLocation[];
 }
 
+export interface PlexLibraryDetails {
+  size: number;
+  allowSync: boolean;
+  art: string;
+  content: string;
+  identifier: string;
+  librarySectionID: number;
+  mediaTagPrefix: string;
+  mediaTagVersion: number;
+  thumb: string;
+  title1: string;
+  viewGroup: string;
+  Directory: {
+    key: string;
+    title: string;
+  }[];
+}
+
 export interface PlexLibraries {
   MediaContainer: {
     size: number;
@@ -88,13 +106,15 @@ export interface PlexTag {
   tag: string;
 }
 
+export type PlexMetadataType = 'movie' | 'show' | 'season' | 'episode' | string;
+
 export interface PlexMetadata {
   ratingKey: string;
   key: string;
   guid: string;
   slug: string;
   studio: string;
-  type: string;
+  type: PlexMetadataType;
   contentRating: string;
   summary: string;
   rating: number;

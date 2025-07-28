@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PlexLibraries, PlexLibrary, PlexMetadata, PlexLibraryContent } from '../../types';
+import { PlexLibraries, PlexLibrary, PlexMetadata, PlexLibraryContent, PlexLibraryDetails } from '../../types';
 import { Cache, CacheOptions } from '../utils';
 import { minutes } from '../utils';
 
@@ -79,20 +79,37 @@ class PlexAPI {
   }
 
   /**
-   * @brief Fetches metadata for a specific library.
-   * @param libraryKey - The key of the library to fetch metadata for.
+   * @brief Get library details from the Plex server.
+   * @param libraryKey - The library section id to get the details from
    * @param forceRefresh - If true, bypasses cache and makes fresh API call
-   * @returns A promise that resolves to the library metadata.
+   * @returns A promise that resolves the Plex library details
    */
-  public async getLibraryContent(libraryKey: string, forceRefresh: boolean = false): Promise<PlexMetadata[]> {
-    const endpoint = `/library/sections/${libraryKey}/all`;
+  public async getLibraryDetails(libraryKey: number, forceRefresh: boolean = false): Promise<PlexLibraryDetails> {
+    const endpoint = `/library/sections/${libraryKey.toString()}`;
 
     if (forceRefresh) {
       this.cache.delete(endpoint);
     }
 
-    // Library content might change more frequently, use shorter TTL (10 minutes)
-    const contentData = await this.request(endpoint, 10 * 60 * 1000);
+    const libraryDetails = await this.request(endpoint, minutes(10));
+    return (libraryDetails as { MediaContainer: PlexLibraryDetails }).MediaContainer;
+  }
+
+  /**
+   * @brief Fetches metadata for a specific library.
+   * @param libraryKey - The key of the library to fetch metadata for.
+   * @param forceRefresh - If true, bypasses cache and makes fresh API call
+   * @returns A promise that resolves to the library metadata.
+   */
+  public async getLibraryContent(libraryKey: number, forceRefresh: boolean = false): Promise<PlexMetadata[]> {
+    const endpoint = `/library/sections/${libraryKey.toString()}/all`;
+
+    if (forceRefresh) {
+      this.cache.delete(endpoint);
+    }
+
+    // Library content might change more frequently, use shorter TTL (5 minutes)
+    const contentData = await this.request(endpoint, minutes(5));
     return (contentData as PlexLibraryContent).MediaContainer.Metadata;
   }
 

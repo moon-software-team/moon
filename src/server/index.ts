@@ -8,9 +8,12 @@ import { getLanIPAddress } from './utils';
 import { plex } from './services';
 import QRCode from 'qrcode';
 import argv from '../config';
+import mainRouter from './routes';
 
 const app = express();
 const server = http.createServer(app);
+
+app.use('/', mainRouter);
 
 const io = new SocketIOServer(server, {
   cors: {
