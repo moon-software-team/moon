@@ -17,7 +17,7 @@ export class VLC {
 
   constructor() {
     this.VLC_PATH = this.getDefaultVLCPath();
-    this.VLC_FLAGS = ['--intf=rc'];
+    this.VLC_FLAGS = ['--intf=dummy', '--extraintf=rc'];
   }
 
   public async open(flags: VLCCliFlag[] = [], input: string): Promise<void> {
