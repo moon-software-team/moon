@@ -142,10 +142,7 @@ export class VLC {
         buffer = buffer.replace(/status change: \([^)]+\)\r?\n/g, '');
         buffer = buffer.replace(/^VLC media player.*[\r\n]/gm, '');
         buffer = buffer.replace(/^Command Line.*[\r\n]/gm, '');
-
-        if (command === 'status') {
-          console.log('VLC Status Response:', `\`${buffer}\``);
-        }
+        buffer = buffer.replace(/^status: returned.*[\r\n]/gm, '');
 
         if (pattern) {
           const match = buffer.match(pattern);
@@ -376,17 +373,12 @@ export class VLC {
       state: '',
       position: await this.getTime(),
       length: await this.getLength(),
-      volume: 0
+      volume: await this.getVolume()
     };
 
-    const response = await this.getResponse('status');
+    const response = await this.getResponse('status', /(\d+)/);
 
-    console.log('VLC Status Response:', `\`${response}\``);
-
-    const stateMatch = response.match(/\(\s*state\s+(\w+)\s*\)/);
-    if (stateMatch) {
-      status.state = stateMatch[1];
-    }
+    status.state = response === '4' ? 'playing' : response === '3' ? 'paused' : 'stopped';
 
     console.log('Parsed VLC Status:', status);
 
