@@ -14,7 +14,6 @@ import {
   onChangeSubtitleTrack,
   onPlayerOpened as onPlayerAlreadyOpened
 } from './player';
-import { vlc } from '../services';
 
 export const onDisconnect = (socket: DefaultSocket) => {
   // Handle socket disconnection logic here

@@ -1,4 +1,3 @@
-import { Server as SocketIOServer } from 'socket.io';
 import { DefaultSocket } from '../../../types';
 import { vlc } from '../../services';
 
