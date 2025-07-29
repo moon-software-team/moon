@@ -15,6 +15,8 @@ export const loadConfig = () => {
 
   process.moonConfig = config;
 
+  saveConfig(config);
+
   return config;
 };
 

@@ -8,12 +8,12 @@ declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 type ApplicationEvents = {
-  'close': void;
-  'create': void;
-  'show': void;
-  'hide': void;
-  'focus': void;
-  'serve': void;
+  close: void;
+  create: void;
+  show: void;
+  hide: void;
+  focus: void;
+  serve: void;
 };
 
 export class Application extends EventBus<ApplicationEvents> {

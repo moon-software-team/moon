@@ -1,4 +1,7 @@
 export interface MoonConfig {
+  assets: {
+    musicPath: string;
+  },
   server: {
     port: number;
   };
@@ -16,6 +19,9 @@ export interface MoonConfig {
 export const DEFAULT_CONFIG: MoonConfig = {
   server: {
     port: 45001
+  },
+  assets: {
+    musicPath: ''
   },
   plex: {
     server: '127.0.0.1',
