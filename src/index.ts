@@ -48,12 +48,17 @@ app.on('activate', () => {
 //   const duration = await vlc.getLength();
 //   console.log('Duration:', duration);
 
-//   const tracks = await vlc.getAudioTracks();
-//   console.log('Audio Tracks:', tracks);
+//   const atracks = await vlc.getAudioTracks();
+//   console.log('Audio Tracks:', atracks);
+
+//   await vlc.seek(500);
+
+//   await sleep(2000);
 
 //   await vlc.setAudioTrack(1);
 
-//   await vlc.seek(100);
+//   const stracks = await vlc.getSubtitleTracks();
+//   console.log('Subtitle Tracks:', stracks);
 
 //   await sleep(10000);
 

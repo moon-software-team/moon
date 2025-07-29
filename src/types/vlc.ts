@@ -387,6 +387,13 @@ type VLCValueFlag =
   | `--socks=${string}`
   | `--socks-user=${string}`
   | `--socks-pwd=${string}`
+  | `--rc-host=${string}` // host:port
+  | `--rc-port=${number}` // 1-65535
+  | `--rc-password=${string}`
+  | `--rc-quiet=${0 | 1}` // 0=off, 1=on
+  | `--rc-verbose=${0 | 1}` // 0=off, 1=on
+  | `--rc-unix=${string}` // path to Unix socket
+  | `--rc-unix-permissions=${string}` // e.g., "rwxrwxrwx"
 
   // Metadata
   | `--meta-title=${string}`

@@ -9,15 +9,61 @@ import {
   BaseTrack,
   VLCStatus
 } from '../types';
+import { Socket } from 'net';
 
 export class VLC {
   private child: ChildProcess | null = null;
+  private socket: Socket | null = null;
   private readonly VLC_FLAGS: VLCCliFlag[];
   private readonly VLC_PATH: string;
 
   constructor() {
     this.VLC_PATH = this.getDefaultVLCPath();
-    this.VLC_FLAGS = ['--intf=dummy', '--extraintf=rc'];
+    this.VLC_FLAGS = ['--intf=rc', '--rc-host=127.0.0.1:45003', '--extraintf=rc'];
+  }
+
+  private cleanup(): void {
+    this.child = null;
+    if (this.socket) {
+      this.socket.destroy();
+      this.socket = null;
+    }
+  }
+
+  private async connectTCP(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.socket) {
+        return resolve();
+      }
+
+      this.socket = new Socket();
+
+      this.socket.connect(45003, '127.0.0.1', () => {
+        resolve();
+      });
+
+      this.socket.on('error', (err) => {
+        this.socket = null;
+        reject(err);
+      });
+    });
+  }
+
+  private async waitForReady(): Promise<void> {
+    let attemps = 0;
+    const maxAttempts = 30;
+
+    while (attemps < maxAttempts) {
+      try {
+        await this.connectTCP();
+        return;
+      } catch (err) {
+        attemps++;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+
+    throw new Error('Failed to connect to VLC after multiple attempts');
   }
 
   public async open(flags: VLCCliFlag[] = [], input: string): Promise<void> {
@@ -35,35 +81,19 @@ export class VLC {
       console.log(`Starting VLC with command:`, this.child.spawnfile, this.child.spawnargs);
 
       this.child.on('error', (err) => {
-        this.child = null;
+        this.cleanup();
         reject(err);
       });
 
-      this.child.on('exit', (code) => {
-        this.child = null;
-      });
-
-      this.child.on('close', (code) => {
-        this.child = null;
-      });
-
-      this.child.stdout.on('data', async (data) => {
-        if (
-          data.includes('Remote control interface initialized') ||
-          data.includes('>') ||
-          data.includes('rc interface')
-        ) {
-          this.child.stdout.removeAllListeners('data');
-          while (!(await this.isPlaying())) {
-            await new Promise((resolve) => setTimeout(resolve, 100));
-          }
-          resolve();
-        }
-      });
+      this.child.on('exit', () => this.cleanup());
+      this.child.on('close', () => this.cleanup());
 
       setTimeout(() => {
-        reject(new Error('Timeout waiting for VLC to start'));
-      }, 3000);
+        this.connectTCP()
+          .then(() => this.waitForReady())
+          .then(resolve)
+          .catch(reject);
+      }, 1000);
     });
   }
 
@@ -83,8 +113,8 @@ export class VLC {
 
   private async sendCommand(command: VLCCommand): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.child && this.child.stdin.writable) {
-        this.child.stdin.write(`${command}\n`, (err) => {
+      if (this.socket && this.socket.writable) {
+        this.socket.write(`${command}\n`, (err) => {
           if (err) {
             reject(err);
           } else {
@@ -99,18 +129,30 @@ export class VLC {
 
   public async getResponse(command: VLCGetterCommands): Promise<string> {
     return new Promise((resolve, reject) => {
-      if (!this.child || !this.child.stdin.writable) {
+      if (!this.socket || !this.socket.writable) {
         return reject('VLC is not running or stdin is not writable');
       }
 
       let buffer = '';
       const prompt = '>';
+      const header = "for help.";
 
       const listener = (data: Buffer) => {
         buffer += data.toString();
 
+        const headerIndex = buffer.indexOf(header);
+        if (headerIndex !== -1) {
+          buffer = buffer.slice(headerIndex + header.length);
+        }
+
+        buffer = buffer.trimStart();
+
+        if (buffer.startsWith(prompt)) {
+          buffer = buffer.slice(prompt.length);
+        }
+
         if (buffer.includes(prompt)) {
-          this.child.stdout.removeListener('data', listener);
+          this.socket.removeListener('data', listener);
           clearTimeout(timeoutId);
 
           const split = buffer.split(prompt);
@@ -121,15 +163,15 @@ export class VLC {
       };
 
       const timeoutId = setTimeout(() => {
-        this.child.stdout.removeListener('data', listener);
+        this.socket.removeListener('data', listener);
         reject(new Error(`Timeout waiting for response to command: ${command}`));
       }, 2000);
 
-      this.child.stdout.on('data', listener);
+      this.socket.on('data', listener);
 
-      this.child.stdin.write(`${command}\n`, (err) => {
+      this.socket.write(`${command}\n`, (err) => {
         if (err) {
-          this.child.stdout.removeListener('data', listener);
+          this.socket.removeListener('data', listener);
           clearTimeout(timeoutId);
           reject(err);
         }
