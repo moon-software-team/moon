@@ -40,7 +40,8 @@ const vlc = new VLC();
       '--no-embedded-video',
       '--qt-minimal-view',
       '--qt-notification=0',
-      '--extraintf=dummy'
+      '--extraintf=dummy',
+      '--quiet'
     ],
     process.argv[2]
   );

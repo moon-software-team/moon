@@ -135,9 +135,11 @@ export class VLC {
 
       let buffer = '';
       const prompt = '>';
-      const header = "for help.";
+      const header = 'for help.';
 
       const listener = (data: Buffer) => {
+        console.log('Received data:', `\`${data.toString()}\``);
+
         buffer += data.toString();
 
         const headerIndex = buffer.indexOf(header);
