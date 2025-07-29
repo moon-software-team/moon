@@ -378,7 +378,12 @@ export class VLC {
 
     const response = await this.getResponse('status', /(\d+)/);
 
-    status.state = response === '4' ? 'playing' : response === '3' ? 'paused' : 'stopped';
+    console.log('VLC Status Response:', `\`${response}\``);
+
+    const stateMatch = response.match(/\(\s*state\s+(\w+)\s*\)/);
+    if (stateMatch) {
+      status.state = stateMatch[1];
+    }
 
     console.log('Parsed VLC Status:', status);
 
