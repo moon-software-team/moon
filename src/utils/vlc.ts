@@ -143,6 +143,10 @@ export class VLC {
         buffer = buffer.replace(/^VLC media player.*[\r\n]/gm, '');
         buffer = buffer.replace(/^Command Line.*[\r\n]/gm, '');
 
+        if (command === 'status') {
+          console.log('VLC Status Response:', `\`${buffer}\``);
+        }
+
         if (pattern) {
           const match = buffer.match(pattern);
           if (match) {
@@ -372,10 +376,10 @@ export class VLC {
       state: '',
       position: await this.getTime(),
       length: await this.getLength(),
-      volume: await this.getVolume()
+      volume: 0
     };
 
-    const response = await this.getResponse('status', /(.+?)(?=\r?\n\+|$)/s);
+    const response = await this.getResponse('status');
 
     console.log('VLC Status Response:', `\`${response}\``);
 
