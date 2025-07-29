@@ -372,7 +372,7 @@ export class VLC {
       state: '',
       position: await this.getTime(),
       length: await this.getLength(),
-      volume: 0
+      volume: await this.getVolume()
     };
 
     const response = await this.getResponse('status', /(.+?)(?=\r?\n\+|$)/s);
@@ -380,11 +380,6 @@ export class VLC {
     const stateMatch = response.match(/\(\s*state\s+(\w+)\s*\)/);
     if (stateMatch) {
       status.state = stateMatch[1];
-    }
-
-    const volumeMatch = response.match(/\(\s*audio\s+volume:\s*([\d.]+)\s*\)/);
-    if (volumeMatch) {
-      status.volume = parseInt(volumeMatch[1]);
     }
 
     return status;

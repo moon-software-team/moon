@@ -1030,7 +1030,7 @@ function updatePlayerUI(status) {
 
   // Update time display
   if (status.length && status.position !== undefined) {
-    const currentSeconds = Math.floor(status.position * status.length);
+    const currentSeconds = status.position;
     const totalSeconds = Math.floor(status.length);
 
     CURRENT_TIME.textContent = formatTime(currentSeconds);
