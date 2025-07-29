@@ -1,5 +1,14 @@
 import { ChildProcess, spawn } from 'child_process';
-import { VLCCommand, VLCCliFlag, VLCGetterCommands, AudioTrack, VideoTrack, SubtitleTrack, BaseTrack } from '../types';
+import {
+  VLCCommand,
+  VLCCliFlag,
+  VLCGetterCommands,
+  AudioTrack,
+  VideoTrack,
+  SubtitleTrack,
+  BaseTrack,
+  VLCStatus
+} from '../types';
 import { getDefaultVLCPath } from '../server/utils/vlc';
 
 export class VLC {
@@ -194,7 +203,7 @@ export class VLC {
     return this.sendCommand(`volume ${volume}`);
   }
 
-  public async seek(seconds: number): Promise<void> {
+  public async seek(seconds: number | string): Promise<void> {
     return this.sendCommand(`seek ${seconds}`);
   }
 
@@ -279,6 +288,29 @@ export class VLC {
 
   public async setSubtitleTrack(trackId: number): Promise<void> {
     return this.sendCommand(`strack ${trackId}`);
+  }
+
+  public async getStatus(): Promise<VLCStatus> {
+    const status: VLCStatus = {
+      state: '',
+      position: await this.getTime(),
+      length: await this.getLength(),
+      volume: 0
+    };
+
+    const response = await this.getResponse('status');
+
+    const stateMatch = response.match(/\(\s*state\s+(\w+)\s*\)/);
+    if (stateMatch) {
+      status.state = stateMatch[1];
+    }
+
+    const volumeMatch = response.match(/\(\s*audio\s+volume:\s*([\d.]+)\s*\)/);
+    if (volumeMatch) {
+      status.volume = parseInt(volumeMatch[1]);
+    }
+
+    return status;
   }
 }
 

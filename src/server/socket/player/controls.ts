@@ -1,5 +1,5 @@
 import { DefaultSocket } from '../../../types';
-import { vlc } from '../../services';
+import { vlc } from '../../../utils';
 
 export const onPlay = async (socket: DefaultSocket) => {
   if (vlc.isOpen()) {
@@ -30,7 +30,7 @@ export const onPause = async (socket: DefaultSocket) => {
 export const onTogglePlayPause = async (socket: DefaultSocket) => {
   if (vlc.isOpen()) {
     try {
-      await vlc.togglePlayPause();
+      await vlc.togglePause();
       socket.emit('toggle-play-pause', true);
     } catch (error) {
       socket.emit('toggle-play-pause', false);
@@ -43,7 +43,7 @@ export const onTogglePlayPause = async (socket: DefaultSocket) => {
 export const onVolume = async (socket: DefaultSocket, volume: number) => {
   if (vlc.isOpen()) {
     try {
-      await vlc.setVolumePercent(volume);
+      await vlc.volume(Math.round((volume / 100) * 256));
       socket.emit('volume', true);
     } catch (error) {
       socket.emit('volume', false);
@@ -69,7 +69,8 @@ export const onSeek = async (socket: DefaultSocket, seekTime: number) => {
 export const onSeekRelative = async (socket: DefaultSocket, seekTime: number) => {
   if (vlc.isOpen()) {
     try {
-      await vlc.seekRelative(seekTime);
+      const sign = seekTime >= 0 ? '+' : '-';
+      await vlc.seek(`${sign}${Math.abs(seekTime)}`);
       socket.emit('seek-relative', true);
     } catch (error) {
       socket.emit('seek-relative', false);
@@ -82,7 +83,7 @@ export const onSeekRelative = async (socket: DefaultSocket, seekTime: number) =>
 export const onSeekPercent = async (socket: DefaultSocket, seekPercent: number) => {
   if (vlc.isOpen()) {
     try {
-      await vlc.seekToPercent(seekPercent);
+      await vlc.seek(`${Math.max(0, Math.min(100, seekPercent))}%`);
       socket.emit('seek-percent', true);
     } catch (error) {
       socket.emit('seek-percent', false);

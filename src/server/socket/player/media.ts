@@ -1,11 +1,12 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { DefaultSocket } from '../../../types';
-import { vlc } from '../../services';
+import { vlc } from '../../../utils';
+import { AudioTrack, SubtitleTrack, VideoTrack } from '../../../types';
 import fs from 'fs';
 
 let statusInterval: NodeJS.Timeout | null = null;
-let availableAudioTracks: any[] = [];
-let availableSubtitleTracks: any[] = [];
+let availableAudioTracks: AudioTrack[] = [];
+let availableSubtitleTracks: SubtitleTrack[] = [];
 let currentAudioTrack: number = -1;
 let currentSubtitleTrack: number = -1;
 
@@ -27,7 +28,7 @@ const startStatusUpdates = (io: SocketIOServer) => {
         const status = await vlc.getStatus();
         const statusWithTitle = {
           ...status,
-          title: vlc.getTitle(),
+          title: await vlc.getTitle(),
           currentAudioTrack,
           currentSubtitleTrack,
           availableAudioTracks,
@@ -74,40 +75,37 @@ export const onStop = async (io: SocketIOServer, socket: DefaultSocket) => {
 };
 
 export const onWatch = async (io: SocketIOServer, socket: DefaultSocket, data: any) => {
-  const { uri, title, audioTracks, subtitleTracks } = data;
-
-  console.log('Watch request for:', uri);
-  console.log('Available audio tracks:', audioTracks?.length || 0);
-  console.log('Available subtitle tracks:', subtitleTracks?.length || 0);
+  const { uri } = data;
 
   if (fs.existsSync(uri) && !vlc.isOpen()) {
     try {
-      // Store track information
-      availableAudioTracks = audioTracks || [];
-      availableSubtitleTracks = subtitleTracks || [];
+      await vlc.open(
+        [
+          '--fullscreen',
+          '--no-video-title-show',
+          '--no-osd',
+          '--no-random',
+          '--no-loop',
+          '--no-repeat',
+          '--video-on-top',
+          '--no-embedded-video',
+          '--qt-minimal-view',
+          '--qt-notification=0',
+          '--extraintf=dummy'
+        ],
+        uri
+      );
 
-      // Reset current track selections to defaults
-      currentAudioTrack = -1; // Default
-      currentSubtitleTrack = -1; // Off
+      availableAudioTracks = await vlc.getAudioTracks();
+      availableSubtitleTracks = await vlc.getSubtitleTracks();
 
-      // Find default tracks if available
-      const defaultAudio = availableAudioTracks.find((track) => track.default || track.selected);
-      const defaultSubtitle = availableSubtitleTracks.find((track) => track.default || track.selected);
-
-      if (defaultAudio) {
-        currentAudioTrack = availableAudioTracks.indexOf(defaultAudio);
-      }
-      if (defaultSubtitle) {
-        currentSubtitleTrack = availableSubtitleTracks.indexOf(defaultSubtitle);
-      }
-
-      await vlc.openFile(uri, title);
-      await vlc.waitForPlayback();
+      currentAudioTrack = availableAudioTracks.find((track) => track.selected).id;
+      currentSubtitleTrack = availableSubtitleTracks.find((track) => track.selected).id;
 
       const status = await vlc.getStatus();
       const statusWithTracks = {
         ...status,
-        title: vlc.getTitle(),
+        title: await vlc.getTitle(),
         currentAudioTrack,
         currentSubtitleTrack,
         availableAudioTracks,
@@ -126,33 +124,34 @@ export const onWatch = async (io: SocketIOServer, socket: DefaultSocket, data: a
   } else if (vlc.isOpen()) {
     // VLC is already open, try to add to playlist or replace
     try {
-      // Store track information
-      availableAudioTracks = audioTracks || [];
-      availableSubtitleTracks = subtitleTracks || [];
-
-      // Reset current track selections to defaults
-      currentAudioTrack = -1; // Default
-      currentSubtitleTrack = -1; // Off
-
-      // Find default tracks if available
-      const defaultAudio = availableAudioTracks.find((track) => track.default || track.selected);
-      const defaultSubtitle = availableSubtitleTracks.find((track) => track.default || track.selected);
-
-      if (defaultAudio) {
-        currentAudioTrack = availableAudioTracks.indexOf(defaultAudio);
-      }
-      if (defaultSubtitle) {
-        currentSubtitleTrack = availableSubtitleTracks.indexOf(defaultSubtitle);
-      }
-
       await vlc.close();
-      await vlc.openFile(uri, title);
-      await vlc.waitForPlayback();
+      await vlc.open(
+        [
+          '--fullscreen',
+          '--no-video-title-show',
+          '--no-osd',
+          '--no-random',
+          '--no-loop',
+          '--no-repeat',
+          '--video-on-top',
+          '--no-embedded-video',
+          '--qt-minimal-view',
+          '--qt-notification=0',
+          '--extraintf=dummy'
+        ],
+        uri
+      );
+
+      availableAudioTracks = await vlc.getAudioTracks();
+      availableSubtitleTracks = await vlc.getSubtitleTracks();
+
+      currentAudioTrack = availableAudioTracks.find((track) => track.selected).id;
+      currentSubtitleTrack = availableSubtitleTracks.find((track) => track.selected).id;
 
       const status = await vlc.getStatus();
       const statusWithTracks = {
         ...status,
-        title: vlc.getTitle(),
+        title: await vlc.getTitle(),
         currentAudioTrack,
         currentSubtitleTrack,
         availableAudioTracks,

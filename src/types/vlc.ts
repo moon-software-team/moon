@@ -9,7 +9,6 @@ export interface VLCStatus {
   position: number;
   length: number;
   volume: number;
-  currentplid: number;
 }
 
 export interface BaseTrack {
@@ -92,7 +91,7 @@ type VLCRequiredParamCommands =
   | `gotoitem ${number}`
   | `title ${number}`
   | `chapter ${number}`
-  | `seek ${number}`
+  | `seek ${number | string}`
   | `rate ${number}`
   | `info ${number}`
   | `volume ${number}`
@@ -130,6 +129,7 @@ export type VLCGetterCommands =
   | 'vdeinterlace'
   | 'vdeinterlace_mode'
   | 'strack'
+  | 'status'
   | 'info'
   | 'stats'
   | 'get_time'
