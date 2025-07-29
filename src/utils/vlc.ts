@@ -377,10 +377,14 @@ export class VLC {
 
     const response = await this.getResponse('status', /(.+?)(?=\r?\n\+|$)/s);
 
+    console.log('VLC Status Response:', `\`${response}\``);
+
     const stateMatch = response.match(/\(\s*state\s+(\w+)\s*\)/);
     if (stateMatch) {
       status.state = stateMatch[1];
     }
+
+    console.log('Parsed VLC Status:', status);
 
     return status;
   }
