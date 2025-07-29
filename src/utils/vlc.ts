@@ -127,53 +127,71 @@ export class VLC {
     });
   }
 
-  public async getResponse(command: VLCGetterCommands): Promise<string> {
+  public async getResponse(command: VLCGetterCommands, pattern?: RegExp, timeout: number = 2000): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!this.socket || !this.socket.writable) {
         return reject('VLC is not running or stdin is not writable');
       }
 
       let buffer = '';
-      const prompt = '>';
-      const header = 'for help.';
 
       const listener = (data: Buffer) => {
-        console.log('Received data:', `\`${data.toString()}\``);
-
         buffer += data.toString();
 
-        const headerIndex = buffer.indexOf(header);
-        if (headerIndex !== -1) {
-          buffer = buffer.slice(headerIndex + header.length);
-        }
+        // Remove status change lines that can interfere with pattern matching
+        buffer = buffer.replace(/status change: \([^)]+\)\r?\n/g, '');
+        buffer = buffer.replace(/^VLC media player.*[\r\n]/gm, '');
+        buffer = buffer.replace(/^Command Line.*[\r\n]/gm, '');
 
-        buffer = buffer.trimStart();
+        if (pattern) {
+          const match = buffer.match(pattern);
+          if (match) {
+            this.socket!.removeListener('data', listener);
+            clearTimeout(timeoutId);
 
-        if (buffer.startsWith(prompt)) {
-          buffer = buffer.slice(prompt.length);
-        }
+            // Return the captured group if available, otherwise the full match
+            const result = match[0];
 
-        if (buffer.includes(prompt)) {
-          this.socket.removeListener('data', listener);
-          clearTimeout(timeoutId);
+            resolve(result.trim());
+          }
+        } else {
+          // Fallback to original logic for backward compatibility
+          const prompt = '>';
+          const header = 'for help.';
 
-          const split = buffer.split(prompt);
-          const response = split[0].trim();
+          const headerIndex = buffer.indexOf(header);
+          if (headerIndex !== -1) {
+            buffer = buffer.slice(headerIndex + header.length);
+          }
 
-          resolve(response);
+          buffer = buffer.trimStart();
+
+          if (buffer.startsWith(prompt)) {
+            buffer = buffer.slice(prompt.length);
+          }
+
+          if (buffer.includes(prompt)) {
+            this.socket!.removeListener('data', listener);
+            clearTimeout(timeoutId);
+
+            const split = buffer.split(prompt);
+            const response = split[0].trim();
+
+            resolve(response);
+          }
         }
       };
 
       const timeoutId = setTimeout(() => {
-        this.socket.removeListener('data', listener);
+        this.socket!.removeListener('data', listener);
         reject(new Error(`Timeout waiting for response to command: ${command}`));
-      }, 2000);
+      }, timeout);
 
       this.socket.on('data', listener);
 
       this.socket.write(`${command}\n`, (err) => {
         if (err) {
-          this.socket.removeListener('data', listener);
+          this.socket!.removeListener('data', listener);
           clearTimeout(timeoutId);
           reject(err);
         }
@@ -277,30 +295,32 @@ export class VLC {
   }
 
   public async getTime(): Promise<number> {
-    return parseInt((await this.getResponse('get_time')) || '0', 10);
+    return parseInt((await this.getResponse('get_time', /(\d+)/)) || '0', 10);
   }
 
   public async isPlaying(): Promise<boolean> {
-    return (await this.getResponse('is_playing')) === '1';
+    return (await this.getResponse('is_playing', /([01])/)) === '1';
   }
 
   public async getTitle(): Promise<string> {
-    return (await this.getResponse('get_title')) || '';
+    return (await this.getResponse('get_title', /(.+?)(?:\r?\n|$)/)) || '';
   }
 
   public async getLength(): Promise<number> {
-    return parseInt((await this.getResponse('get_length')) || '0', 10);
+    return parseInt((await this.getResponse('get_length', /(\d+)/)) || '0', 10);
   }
 
   public async getVolume(): Promise<number> {
-    return parseInt((await this.getResponse('volume')) || '0', 10);
+    return parseInt((await this.getResponse('volume', /(\d+)/)) || '0', 10);
   }
 
   private async getTracks(command: VLCGetterCommands): Promise<BaseTrack[]> {
-    const response = await this.getResponse(command);
+    const response = await this.getResponse(command, /\+----\[ ([^\]]+) \]\r?\n(.*?)\+----\[ end of \1 \]/s);
     const tracks: BaseTrack[] = [];
 
     response.split('\n').forEach((line) => {
+      line = line.replace(/\r/g, '');
+
       const match = line.match(/\|\s*(-?\d+)\s*-\s*(.*)/);
       if (match) {
         const isSelected = line.trim().endsWith('*');
@@ -355,7 +375,7 @@ export class VLC {
       volume: 0
     };
 
-    const response = await this.getResponse('status');
+    const response = await this.getResponse('status', /(.+?)(?=\r?\n\+|$)/s);
 
     const stateMatch = response.match(/\(\s*state\s+(\w+)\s*\)/);
     if (stateMatch) {
