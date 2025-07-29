@@ -9,7 +9,6 @@ import {
   BaseTrack,
   VLCStatus
 } from '../types';
-import { getDefaultVLCPath } from '../server/utils/vlc';
 
 export class VLC {
   private child: ChildProcess | null = null;
@@ -17,7 +16,7 @@ export class VLC {
   private readonly VLC_PATH: string;
 
   constructor() {
-    this.VLC_PATH = getDefaultVLCPath();
+    this.VLC_PATH = this.getDefaultVLCPath();
     this.VLC_FLAGS = ['--intf=rc'];
   }
 
@@ -66,6 +65,20 @@ export class VLC {
         reject(new Error('Timeout waiting for VLC to start'));
       }, 3000);
     });
+  }
+
+  private getDefaultVLCPath(): string {
+    // Default VLC paths for different platforms
+    switch (process.platform) {
+      case 'win32':
+        return 'C:\\Program Files\\VideoLAN\\VLC\\vlc.exe';
+      case 'darwin':
+        return '/Applications/VLC.app/Contents/MacOS/VLC';
+      case 'linux':
+        return 'vlc';
+      default:
+        return 'vlc';
+    }
   }
 
   private async sendCommand(command: VLCCommand): Promise<void> {
