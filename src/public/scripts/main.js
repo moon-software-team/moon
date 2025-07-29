@@ -1019,6 +1019,8 @@ function requestPlayerStatus() {
 function updatePlayerUI(status) {
   playerStatus = { ...playerStatus, ...status };
 
+  console.log('Updating player UI with status:', playerStatus);
+
   // Update play/pause button
   if (status.state === 'playing') {
     PLAY_ICON.classList.add('hidden');
@@ -1038,7 +1040,7 @@ function updatePlayerUI(status) {
 
     // Update progress bar (only if not dragging)
     if (!isDragging && status.length > 0) {
-      const progressPercent = status.position * 100;
+      const progressPercent = (status.position / status.length) * 100;
       PROGRESS_FILL.style.width = `${progressPercent}%`;
       PROGRESS_HANDLE.style.left = `${progressPercent}%`;
     }
