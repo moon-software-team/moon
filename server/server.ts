@@ -49,7 +49,7 @@ export class MoonServer {
     this.io = new SocketIOServer(this.httpServer, this.options.socketOptions);
 
     // Set up the Plex service
-    // plex.init();
+    plex.init();
 
     // Set up the connection handler for Socket.IO
     this.io.on('connection', (socket) => onConnection(this.io!, socket));
