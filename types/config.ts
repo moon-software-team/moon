@@ -33,4 +33,10 @@ export interface MoonConfig {
    * @default '.'
    */
   musicDirectory: string;
+
+  plex: {
+    server: string;
+    token: string;
+    port: number;
+  }
 }

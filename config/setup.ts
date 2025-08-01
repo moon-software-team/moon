@@ -10,7 +10,12 @@ export const MOON_CONFIG: MoonConfig = {
     port: 45001,
     host: '0.0.0.0'
   },
-  musicDirectory: '.'
+  musicDirectory: '.',
+  plex: {
+    server: '127.0.0.1',
+    token: '',
+    port: 32400
+  }
 };
 
 /** Application tree */
