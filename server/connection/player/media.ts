@@ -68,28 +68,24 @@ export const onWatch = async (io: SocketIOServer, socket: DefaultSocket, data: a
       process.moon.status = 'playing';
 
       await process.moon.player.open(uri, [
-        // '--fullscreen',
-        // '--no-osd',
-        // '--no-random',
-        // '--no-loop',
-        // '--no-repeat',
-        // '--video-on-top',
-        // '--no-embedded-video',
-        // '--qt-minimal-view',
-        // '--qt-notification=0',
-        // '--extraintf=dummy'
+        '--fullscreen',
+        '--no-osd',
+        '--no-random',
+        '--no-loop',
+        '--no-repeat',
+        '--video-on-top',
+        '--no-embedded-video',
+        '--qt-minimal-view',
+        '--qt-notification=0'
       ]);
 
-      console.log(`Opened file: ${uri}`);
-      await process.moon.player.setVolume(256);
-      await process.moon.player.seek('50%');
+      // Set the volume to 80%
+      await process.moon.player.setVolume(256 * 0.8);
 
-      setTimeout(() => {
-        onStop(io, socket);
-      }, 10e3);
-
+      // Get the status of the player
       const status = await process.moon.player.getStatus();
 
+      // Emit the status to the socket and all connected clients
       socket.emit('watch', true);
       io.emit('player-opened', status);
 

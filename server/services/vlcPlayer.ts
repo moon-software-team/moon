@@ -67,8 +67,6 @@ export class VLCPlayer {
       stdio: 'pipe'
     });
 
-    console.log(`Starting VLC with args:`, this.child.spawnargs);
-
     // Handle VLC process error
     this.child.on('error', (error) => {
       console.error(`Failed to start VLC: ${error.message}`);
@@ -76,7 +74,6 @@ export class VLCPlayer {
 
     // Handle VLC process exit
     this.child.on('exit', (code) => {
-      console.log(`VLC process exited with code ${code}`);
       this.child = null;
     });
 

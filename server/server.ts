@@ -252,15 +252,15 @@ export class MoonServer {
 
     try {
       // Open the player with the selected file
-      console.log(`Starting ambient music with file: ${files[randomIndex]}`);
       await process.moon.player.open(path.resolve(process.moon.config.musicDirectory, files[randomIndex]), [
         '--no-video',
         '--random',
-        '--repeat'
+        '--no-repeat',
+        '--loop'
       ]);
 
-      // Set the player volume to 25%
-      await process.moon.player.setVolume(256 * 0.25);
+      // Set the player volume to 50%
+      await process.moon.player.setVolume(256 * 0.50);
 
       // Enqueue the other files in the music directory
       for (let i = 0; i < files.length; i++) {
@@ -268,6 +268,9 @@ export class MoonServer {
           await process.moon.player.enqueue(path.resolve(process.moon.config.musicDirectory, files[i]));
         }
       }
+
+      // Log the number of queued files
+      console.log(`Queued ambient music: ${files.length} files found.`);
     } catch (error) {
       console.error('Failed to start ambient music:', error);
       throw new Error('Failed to start ambient music.');
