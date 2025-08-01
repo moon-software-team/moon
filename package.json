@@ -63,6 +63,7 @@
     "express": "^5.1.0",
     "joi": "^17.13.3",
     "node-cron": "^4.2.1",
+    "portfinder": "^1.0.37",
     "qrcode": "^1.5.4",
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.3",

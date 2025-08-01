@@ -1,8 +1,8 @@
 /** Dependencies */
 import { spawn, ChildProcess } from 'child_process';
-import path from 'path';
 import http from 'node:http';
 import { VLCConfig, VLCCommand, VLCAspectRatio, VLCCliFlag, VLCStatus } from '@server/types';
+import portfinder from 'portfinder';
 
 /** Constant for VLC executable path */
 const VLC_PATH =
@@ -44,12 +44,18 @@ export class VLCPlayer {
       throw new Error('VLC player is already running');
     }
 
+    // Find a available port if the configured port is in use
+    const port = await portfinder.getPortPromise({ port: this.config.http.port });
+
+    // Update the VLC url with the available port
+    this.url = `http://${this.config.http.host}:${port}/requests/status.json`;
+
     // Construct the VLC command with the media file and flags
     const args = [
       media,
       '--intf=http',
       `--http-password=${this.config.http.password}`,
-      `--http-port=${this.config.http.port}`,
+      `--http-port=${port}`,
       `--http-host=${this.config.http.host}`,
       '--no-video-title-show',
       ...flags
