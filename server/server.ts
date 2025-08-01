@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import os from 'os';
 import { onConnection } from '@server/connection';
 import fs from 'fs';
+import { plex } from '@server/services';
 
 /** Webpack Constants */
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -46,6 +47,9 @@ export class MoonServer {
     this.app = express();
     this.httpServer = createServer(this.app);
     this.io = new SocketIOServer(this.httpServer, this.options.socketOptions);
+
+    // Set up the Plex service
+    plex.init();
 
     // Set up the connection handler for Socket.IO
     this.io.on('connection', (socket) => onConnection(this.io!, socket));
