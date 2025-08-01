@@ -47,6 +47,7 @@ export const onStop = async (io: SocketIOServer, socket: DefaultSocket) => {
       await process.moon.player.close();
       process.moon.status = 'ambient';
       await process.moon.server.startAmbientMusic();
+      process.moon?.window?.show();
     } catch (error) {
       socket.emit('stop', false);
     }
@@ -79,6 +80,9 @@ export const onWatch = async (io: SocketIOServer, socket: DefaultSocket, data: a
         '--qt-notification=0'
       ]);
 
+      // Hide main application window
+      process.moon?.window?.hide();
+
       // Set the volume to 80%
       await process.moon.player.setVolume(256 * 0.8);
 
@@ -93,6 +97,7 @@ export const onWatch = async (io: SocketIOServer, socket: DefaultSocket, data: a
     } catch (error) {
       console.error('Error opening file:', error);
       socket.emit('watch', false);
+      process.moon?.window?.show();
       process.moon.status = 'ambient';
       await process.moon.server.startAmbientMusic();
     }

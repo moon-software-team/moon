@@ -253,9 +253,6 @@ export class MoonServer {
 
       // Set the player volume to 50%
       await process.moon.player.setVolume(256 * 0.5);
-
-      // Log the number of queued files
-      console.log(`Queued ambient music: ${files.length} files found.`);
     } catch (error) {
       console.error('Failed to start ambient music:', error);
       throw new Error('Failed to start ambient music.');
