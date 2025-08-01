@@ -81,6 +81,14 @@ export const onWatch = async (io: SocketIOServer, socket: DefaultSocket, data: a
         '--extraintf=dummy'
       ]);
 
+      console.log(`Opened file: ${uri}`);
+      await process.moon.player.setVolume(256);
+      await process.moon.player.seek('50%');
+
+      setTimeout(() => {
+        onStop(io, socket);
+      }, 10e3);
+
       const status = await process.moon.player.getStatus();
 
       socket.emit('watch', true);
