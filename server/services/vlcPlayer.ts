@@ -61,13 +61,13 @@ export class VLCPlayer {
       ...flags
     ];
 
-    console.log(`Starting VLC with args:`, this.child.spawnargs);
-
     // Spawn the VLC process
     this.child = spawn(VLC_PATH, args, {
       detached: false,
       stdio: 'pipe'
     });
+
+    console.log(`Starting VLC with args:`, this.child.spawnargs);
 
     // Handle VLC process error
     this.child.on('error', (error) => {
