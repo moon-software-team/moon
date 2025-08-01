@@ -61,6 +61,8 @@ export class VLCPlayer {
       ...flags
     ];
 
+    console.log(`Starting VLC with args:`, this.child.spawnargs);
+
     // Spawn the VLC process
     this.child = spawn(VLC_PATH, args, {
       detached: false,
@@ -92,11 +94,18 @@ export class VLCPlayer {
    *   .catch(error => console.error('Error:', error));
    * player.close();
    */
-  public close(): void {
-    if (this.child) {
-      this.child.kill();
-      this.child = null;
-    }
+  public async close(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.child) {
+        this.child.on('close', () => {
+          this.child = null;
+          resolve();
+        });
+        this.child.kill();
+      } else {
+        resolve();
+      }
+    });
   }
 
   /**

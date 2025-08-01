@@ -68,17 +68,16 @@ export const onWatch = async (io: SocketIOServer, socket: DefaultSocket, data: a
       process.moon.status = 'playing';
 
       await process.moon.player.open(uri, [
-        '--fullscreen',
-        '--no-video-title-show',
-        '--no-osd',
-        '--no-random',
-        '--no-loop',
-        '--no-repeat',
-        '--video-on-top',
-        '--no-embedded-video',
-        '--qt-minimal-view',
-        '--qt-notification=0',
-        '--extraintf=dummy'
+        // '--fullscreen',
+        // '--no-osd',
+        // '--no-random',
+        // '--no-loop',
+        // '--no-repeat',
+        // '--video-on-top',
+        // '--no-embedded-video',
+        // '--qt-minimal-view',
+        // '--qt-notification=0',
+        // '--extraintf=dummy'
       ]);
 
       console.log(`Opened file: ${uri}`);
