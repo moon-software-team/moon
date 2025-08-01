@@ -13,8 +13,21 @@
     "resolveJsonModule": true,
     "types": ["node"],
     "paths": {
-      "*": ["node_modules/*"]
+      "*": ["node_modules/*"],
+      "@/*": ["*"],
+      "@app/*": ["app/*"],
+      "@server/*": ["server/*"],
+      "@utils/*": ["utils/*"],
+      "@services/*": ["server/services/*"],
+      "@controllers/*": ["server/controllers/*"],
+      "@middlewares/*": ["server/middlewares/*"],
+      "@routes/*": ["server/routes/*"],
+      "@models/*": ["server/models/*"],
+      "@config/*": ["config/*"],
+      "@types/*": ["types/*"],
+      "@validators/*": ["server/validators/*"]
     }
   },
-  "include": ["src/**/*"]
+  "include": ["server/**/*", "app/**/*", "types/**/*", "utils/**/*", "config/**/*"],
+  "exclude": ["node_modules", "dist", "build", "coverage", "out"]
 }

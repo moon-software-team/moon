@@ -7,6 +7,7 @@ import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-nati
 import { WebpackPlugin } from '@electron-forge/plugin-webpack';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import path from 'path';
 
 import { mainConfig } from './webpack.main.config';
 import { rendererConfig } from './webpack.renderer.config';
@@ -25,11 +26,11 @@ const config: ForgeConfig = {
         config: rendererConfig,
         entryPoints: [
           {
-            html: './src/index.html',
-            js: './src/renderer.ts',
+            html: path.resolve(__dirname, 'app/public/index.html'),
+            js: path.resolve(__dirname, 'app/renderer/index.ts'),
             name: 'main_window',
             preload: {
-              js: './src/preload.ts'
+              js: path.resolve(__dirname, 'app/preload/index.ts')
             }
           }
         ]
