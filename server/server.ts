@@ -49,7 +49,7 @@ export class MoonServer {
     this.io = new SocketIOServer(this.httpServer, this.options.socketOptions);
 
     // Set up the Plex service
-    plex.init();
+    // plex.init();
 
     // Set up the connection handler for Socket.IO
     this.io.on('connection', (socket) => onConnection(this.io!, socket));
@@ -247,27 +247,12 @@ export class MoonServer {
       return;
     }
 
-    // Get a random file from the music directory
-    const randomIndex = Math.floor(Math.random() * files.length);
-
     try {
       // Open the player with the selected file
-      await process.moon.player.open(path.resolve(process.moon.config.musicDirectory, files[randomIndex]), [
-        '--no-video',
-        '--random',
-        '--no-repeat',
-        '--loop'
-      ]);
+      await process.moon.player.open(path.resolve(process.moon.config.musicDirectory), ['--no-video', '--random']);
 
       // Set the player volume to 50%
-      await process.moon.player.setVolume(256 * 0.50);
-
-      // Enqueue the other files in the music directory
-      for (let i = 0; i < files.length; i++) {
-        if (i !== randomIndex) {
-          await process.moon.player.enqueue(path.resolve(process.moon.config.musicDirectory, files[i]));
-        }
-      }
+      await process.moon.player.setVolume(256 * 0.5);
 
       // Log the number of queued files
       console.log(`Queued ambient music: ${files.length} files found.`);

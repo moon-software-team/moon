@@ -147,7 +147,7 @@ export class VLCPlayer {
    *   .then(response => console.log(response))
    *   .catch(error => console.error('Error:', error));
    */
-  public async request<T extends any>(params: VLCCommand): Promise<T> {
+  public async request<T extends any>(params: VLCCommand, endpoint: string = ''): Promise<T> {
     // Check if the child process is running
     if (!this.child || this.child.exitCode !== null) {
       throw new Error('VLC player is not running');
@@ -155,8 +155,16 @@ export class VLCPlayer {
 
     // Return a promise that resolves when the request is sent
     return new Promise((resolve, reject) => {
+      if (endpoint) {
+        this.url = `http://${this.config.http.host}:${this.config.http.port}/requests/${endpoint}`;
+      }
+
       // Create an HTTP request to the VLC server
       const url = new URL(this.url);
+
+      if (endpoint) {
+        this.url = `http://${this.config.http.host}:${this.config.http.port}/requests/status.json`;
+      }
 
       // Add query parameters to the URL
       for (const [key, value] of Object.entries(params)) {
