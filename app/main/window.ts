@@ -58,6 +58,7 @@ export class MoonWindow {
    */
   public show(): void {
     this.win?.show();
+    this.win?.focus();
   }
 
   /**

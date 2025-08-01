@@ -45,9 +45,9 @@ export const onStop = async (io: SocketIOServer, socket: DefaultSocket) => {
       socket.emit('stop', true);
       io.emit('player-closed');
       await process.moon.player.close();
+      process.moon?.window?.show();
       process.moon.status = 'ambient';
       await process.moon.server.startAmbientMusic();
-      process.moon?.window?.show();
     } catch (error) {
       socket.emit('stop', false);
     }
